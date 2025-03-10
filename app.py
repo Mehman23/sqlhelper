@@ -3,6 +3,7 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 import os
 from dotenv import load_dotenv
 import streamlit as st
+import sqlfluff
 
 load_dotenv()
 
@@ -60,14 +61,26 @@ else:
     st.title("💬 SQL Helper Chatbot")
     st.divider()
 
+    def check_sql_with_sqlfluff(sql_code, dialect="oracle"):
+        result = sqlfluff.lint(sql_code, dialect=dialect)
+        if not result:
+            return "No issues found!"
+        
+        formatted_result = []
+        for issue in result:
+            formatted_result.append(f"Line {issue['start_line_no']}, Pos {issue['start_line_pos']}: {issue['description']}")
+        
+        return "\n".join(formatted_result)
+    
+    
 
     def get_final_prompt(prompt):
 
+        sql_fluff = check_sql_with_sqlfluff(prompt, dialect="oracle")
 
         final_prompt = f"""
-        Analyze the following SQL Script. Identify performance, security, and style issues.  
-        Suggest improvements and provide a corrected version.  
-        Explain reasoning concisely. 
+        I have mentioned below SQL script and SQL Fluff comments. Analyze both of them very well!
+        Explain reasoning concisely:
         - Modify SQL queries as requested while following best practices.
         - Optimize queries for performance, readability, and efficiency.
         - Detect and correct errors in SQL syntax and logic.
@@ -75,6 +88,7 @@ else:
         - Suggest indexing, restructuring, or other improvements when relevant.
 
         SQL Script: {prompt}
+        SQL Fluff: {sql_fluff}
         """
         return final_prompt
 
